@@ -157,6 +157,7 @@ target_link_libraries(onnxruntime_pybind11_state PRIVATE
     onnxruntime_common
     onnxruntime_flatbuffers
     ${pybind11_lib}
+    memcov
 )
 
 if (onnxruntime_ENABLE_LANGUAGE_INTEROP_OPS)

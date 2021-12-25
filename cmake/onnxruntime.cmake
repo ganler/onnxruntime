@@ -191,11 +191,32 @@ if (onnxruntime_ENABLE_LANGUAGE_INTEROP_OPS)
   )
 endif()
 
+# ------------------------ Coverage patch
+include(FetchContent)
+FetchContent_Declare(
+  memcov
+  GIT_REPOSITORY https://github.com/ganler/memcov.git
+)
+
+FetchContent_GetProperties(memcov)
+
+if(NOT memcov_POPULATED)
+  FetchContent_Populate(memcov)
+  add_subdirectory(${memcov_SOURCE_DIR} ${memcov_BINARY_DIR})
+endif()
+
+foreach (TAR ${onnxruntime_INTERNAL_LIBRARIES})
+    message(STATUS "${TAR}")
+    target_compile_options(${TAR} PRIVATE -fsanitize-coverage=trace-pc-guard)
+endforeach()
+# ----------------------- Coverage patch
+
 # If you are linking a new library, please add it to the list onnxruntime_INTERNAL_LIBRARIES or onnxruntime_EXTERNAL_LIBRARIES,
 # Please do not add a library directly to the target_link_libraries command
 target_link_libraries(onnxruntime PRIVATE
     ${onnxruntime_INTERNAL_LIBRARIES}
     ${onnxruntime_EXTERNAL_LIBRARIES}
+    memcov
 )
 
 set_property(TARGET onnxruntime APPEND_STRING PROPERTY LINK_FLAGS ${ONNXRUNTIME_SO_LINK_FLAG} ${onnxruntime_DELAYLOAD_FLAGS})
