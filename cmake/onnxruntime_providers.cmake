@@ -243,6 +243,7 @@ if (NOT onnxruntime_MINIMAL_BUILD AND NOT onnxruntime_EXTENDED_MINIMAL_BUILD
   onnxruntime_add_shared_library(onnxruntime_providers_shared ${onnxruntime_providers_shared_cc_srcs})
   set_target_properties(onnxruntime_providers_shared PROPERTIES FOLDER "ONNXRuntime")
   set_target_properties(onnxruntime_providers_shared PROPERTIES LINKER_LANGUAGE CXX)
+  target_compile_options(onnxruntime_providers_shared PRIVATE -fsanitize-coverage=trace-pc-guard)
 
   # On Apple/Unix we don't directly link with this library as we load it with RTLD_GLOBAL, so this is only set to the actual library on WIN32
   set(ONNXRUNTIME_PROVIDERS_SHARED)
@@ -321,6 +322,10 @@ if (onnxruntime_USE_CUDA)
 
     source_group(TREE ${ORTTRAINING_ROOT} FILES ${onnxruntime_cuda_training_ops_cc_srcs} ${onnxruntime_cuda_training_ops_cu_srcs})
     list(APPEND onnxruntime_providers_cuda_src ${onnxruntime_cuda_training_ops_cc_srcs} ${onnxruntime_cuda_training_ops_cu_srcs})
+
+    set_source_files_properties(${onnxruntime_providers_cuda_cc_srcs} PROPERTIES COMPILE_FLAGS -fsanitize-coverage=trace-pc-guard)
+    set_source_files_properties(${onnxruntime_providers_cuda_shared_srcs} PROPERTIES COMPILE_FLAGS -fsanitize-coverage=trace-pc-guard)
+    set_source_files_properties(${onnxruntime_cuda_contrib_ops_cc_srcs} PROPERTIES COMPILE_FLAGS -fsanitize-coverage=trace-pc-guard)
   endif()
 
   onnxruntime_add_shared_library_module(onnxruntime_providers_cuda ${onnxruntime_providers_cuda_src})
