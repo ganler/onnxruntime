@@ -7,7 +7,7 @@ if(UNIX)
     set(OUTPUT_STYLE xcode)
   else()
     set(OUTPUT_STYLE gcc)
-  endif()  
+  endif()
 else()
   set(SYMBOL_FILE ${CMAKE_CURRENT_BINARY_DIR}/onnxruntime_dll.def)
   set(OUTPUT_STYLE vc)
@@ -157,6 +157,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Android" AND onnxruntime_BUILD_JAVA)
   endforeach()
 endif()
 
+# This list is a reversed topological ordering of library dependencies.
+# Earlier entries may depend on later ones. Later ones should not depend on earlier ones.
 set(onnxruntime_INTERNAL_LIBRARIES
   onnxruntime_session
   ${onnxruntime_libs}
@@ -164,10 +166,9 @@ set(onnxruntime_INTERNAL_LIBRARIES
   ${PROVIDERS_ARMNN}
   ${PROVIDERS_COREML}
   ${PROVIDERS_DML}
-  ${PROVIDERS_MIGRAPHX}
   ${PROVIDERS_NNAPI}
   ${PROVIDERS_NUPHAR}
-  ${PROVIDERS_STVM}
+  ${PROVIDERS_TVM}
   ${PROVIDERS_RKNPU}
   ${PROVIDERS_ROCM}
   ${PROVIDERS_VITISAI}
@@ -175,10 +176,10 @@ set(onnxruntime_INTERNAL_LIBRARIES
   ${onnxruntime_winml}
   onnxruntime_optimizer
   onnxruntime_providers
-  onnxruntime_util
   ${onnxruntime_tvm_libs}
   onnxruntime_framework
   onnxruntime_graph
+  onnxruntime_util
   ${ONNXRUNTIME_MLAS_LIBS}
   onnxruntime_common
   onnxruntime_flatbuffers
@@ -191,32 +192,11 @@ if (onnxruntime_ENABLE_LANGUAGE_INTEROP_OPS)
   )
 endif()
 
-# ------------------------ Coverage patch
-include(FetchContent)
-FetchContent_Declare(
-  memcov
-  GIT_REPOSITORY https://github.com/ganler/memcov.git
-)
-
-FetchContent_GetProperties(memcov)
-
-if(NOT memcov_POPULATED)
-  FetchContent_Populate(memcov)
-  add_subdirectory(${memcov_SOURCE_DIR} ${memcov_BINARY_DIR})
-endif()
-
-foreach (TAR ${onnxruntime_INTERNAL_LIBRARIES})
-    message(STATUS "${TAR}")
-    target_compile_options(${TAR} PRIVATE -fsanitize-coverage=trace-pc-guard)
-endforeach()
-# ----------------------- Coverage patch
-
 # If you are linking a new library, please add it to the list onnxruntime_INTERNAL_LIBRARIES or onnxruntime_EXTERNAL_LIBRARIES,
 # Please do not add a library directly to the target_link_libraries command
 target_link_libraries(onnxruntime PRIVATE
     ${onnxruntime_INTERNAL_LIBRARIES}
     ${onnxruntime_EXTERNAL_LIBRARIES}
-    memcov
 )
 
 set_property(TARGET onnxruntime APPEND_STRING PROPERTY LINK_FLAGS ${ONNXRUNTIME_SO_LINK_FLAG} ${onnxruntime_DELAYLOAD_FLAGS})
@@ -235,6 +215,14 @@ set_target_properties(onnxruntime PROPERTIES FOLDER "ONNXRuntime")
 
 if (WINDOWS_STORE)
   target_link_options(onnxruntime PRIVATE /DELAYLOAD:api-ms-win-core-libraryloader-l1-2-1.dll)
+endif()
+if (WIN32 AND NOT CMAKE_CXX_STANDARD_LIBRARIES MATCHES kernel32.lib)
+  # Workaround STL bug https://github.com/microsoft/STL/issues/434#issuecomment-921321254
+  # Note that the workaround makes std::system_error crash before Windows 10
+
+  # The linker warns "LNK4199: /DELAYLOAD:api-ms-win-core-heapl2-1-0.dll ignored; no imports found from api-ms-win-core-heapl2-1-0.dll"
+  # when you're not using imports directly, even though the import exists in the STL and the DLL would have been linked without DELAYLOAD
+  target_link_options(onnxruntime PRIVATE /DELAYLOAD:api-ms-win-core-heapl2-1-0.dll /ignore:4199)
 endif()
 
 if (winml_is_inbox)
