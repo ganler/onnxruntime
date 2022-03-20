@@ -735,6 +735,9 @@ def generate_build_tree(cmake_path, source_dir, build_dir, cuda_home, cudnn_home
     cmake_dir = os.path.join(source_dir, "cmake")
     cmake_args = [
         cmake_path, cmake_dir,
+        "-DCMAKE_CXX_COMPILER=/usr/bin/clang++-14",
+        "-DCMAKE_C_COMPILER=/usr/bin/clang-14",
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=1",
         "-Donnxruntime_RUN_ONNX_TESTS=" + ("ON" if args.enable_onnx_tests else "OFF"),
         "-Donnxruntime_BUILD_WINML_TESTS=" + ("OFF" if args.skip_winml_tests else "ON"),
         "-Donnxruntime_GENERATE_TEST_REPORTS=ON",

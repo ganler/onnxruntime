@@ -25,9 +25,6 @@ include(CMakeDependentOption)
 include(FetchContent)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
-set(CMAKE_C_COMPILER /usr/bin/clang)
-set(CMAKE_CXX_COMPILER /usr/bin/clang++)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # NOTE: POSITION INDEPENDENT CODE hurts performance, and it only make sense on POSIX systems
@@ -1513,6 +1510,10 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Android" AND Onnxruntime_GCOV_COVERAGE)
   string(APPEND CMAKE_CXX_FLAGS " -g -O0 --coverage ")
   string(APPEND CMAKE_C_FLAGS   " -g -O0 --coverage ")
 endif()
+
+SET(CMAKE_CXX_FLAGS_RELEASE "-O1") # stop code inline.
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
+SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
 
 #Adjust warning flags
 if (onnxruntime_USE_CUDA)
